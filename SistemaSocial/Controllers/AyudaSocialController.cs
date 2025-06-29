@@ -36,7 +36,6 @@ namespace SistemaSocial.Controllers
             ViewData["PeticionID"] = new SelectList(_context.tblPeticion.ToList(), "PeticionID", "Nombre");
         }
 
-
         [HttpGet]
         public IActionResult TipoDeAyuda(string Busqueda, int Pagina)
         {
@@ -79,6 +78,7 @@ namespace SistemaSocial.Controllers
 
             return View(asvm);
         }
+
         [HttpGet]
         public async Task<IActionResult> ListadoFechas(int Pagina, DateTime FechaInicio, DateTime FechaFin, RecuperarDatos R)
         {
@@ -105,18 +105,21 @@ namespace SistemaSocial.Controllers
 
             //FILTRADO
             var ayuda = from a in _context.tblAyudaSocial
-                            where a.FechaElaboracion.Date >= FechaInicio.Date && a.FechaElaboracion.Date <= FechaFin.Date
+                        where a.FechaElaboracion.Date >= FechaInicio.Date
+                           && a.FechaElaboracion.Date <= FechaFin.Date
                         select a;
 
             R.FechaInicio = FechaInicio;
             R.FechaFin = FechaFin;
 
-            asvm.listaAyudas =
-                ayuda.OrderBy(a => a.FechaElaboracion)
-                .ToList();
+            asvm.listaAyudas = ayuda.OrderBy(a => a.FechaElaboracion).ToList();
+            asvm.TotalAyudas = asvm.listaAyudas.Count;
+            asvm.FechaInicio = FechaInicio;
+            asvm.FechaFin = FechaFin;
 
             return View(asvm);
         }
+        
         [HttpGet]
         public IActionResult Imprimir_Filtro(DateTime FechaInicio, DateTime FechaFin)
         {
@@ -135,6 +138,240 @@ namespace SistemaSocial.Controllers
             //return View(asvm);
             return new ViewAsPdf("Imprimir_Filtro", asvm);
         }
+
+        //ESTADÍSTICAS POR MES
+        public IActionResult EstadisticasMes(int Pagina)
+        {
+            Datos();
+            var asvm = new AyudaSocialView();
+
+            //PAGINADO
+            if (Pagina == 0) {
+                asvm.Paginas = 1;
+            }
+            else
+            {
+                asvm.Paginas = Pagina;
+            }
+            int Muestra = 15;
+            int Cantidad = _context.tblClientes.ToList().Count / Muestra;
+            if (Cantidad % Muestra == 0)
+            {
+                asvm.CantidadPaginas = Cantidad;
+            }
+            else
+            {
+                asvm.CantidadPaginas = Cantidad + 1;
+            }
+            TempData["PaginaSiguiente"] = Pagina + 1;
+            TempData["PaginaAnterior"] = Pagina - 1;
+
+
+            //FILTRADO
+            var ayuda = from a in _context.tblAyudaSocial select a;
+
+            asvm.listaAyudas =
+                ayuda.OrderBy(a => a.FechaElaboracion)
+                .ToList();
+
+            return View(asvm);
+        }
+        [HttpGet]
+        public JsonResult ReporteAyudasPorMes(int mes, int anio)
+        {
+            var cantidad = _context.tblAyudaSocial
+                .Where(a => a.FechaElaboracion.Month == mes && a.FechaElaboracion.Year == anio)
+                .Count();
+
+            return Json(new { cantidad });
+        }
+        [HttpGet]
+        public JsonResult ReportePrestacionesPorMes(int mes, int anio)
+        {
+            var top5 = _context.tblAyudaSocial
+                .Include(a => a.Prestaciones)
+                .Where(a => a.FechaElaboracion.Month == mes && a.FechaElaboracion.Year == anio)
+                .GroupBy(a => a.Prestaciones.Nombre)
+                .Select(g => new
+                {
+                    Prestacion = g.Key,
+                    Cantidad = g.Sum(x => x.CantidadEntregada)
+                })
+                .OrderByDescending(x => x.Cantidad)
+                .Take(5)
+                .ToList();
+
+            return Json(top5);
+        }
+
+
+        //ESTADÍSTICAS POR AÑO
+        public IActionResult EstadisticasAño(int Pagina)
+        {
+            Datos();
+            var asvm = new AyudaSocialView();
+
+            //PAGINADO
+            if (Pagina == 0)
+            {
+                asvm.Paginas = 1;
+            }
+            else
+            {
+                asvm.Paginas = Pagina;
+            }
+            int Muestra = 15;
+            int Cantidad = _context.tblClientes.ToList().Count / Muestra;
+            if (Cantidad % Muestra == 0)
+            {
+                asvm.CantidadPaginas = Cantidad;
+            }
+            else
+            {
+                asvm.CantidadPaginas = Cantidad + 1;
+            }
+            TempData["PaginaSiguiente"] = Pagina + 1;
+            TempData["PaginaAnterior"] = Pagina - 1;
+
+
+            //FILTRADO
+            var ayuda = from a in _context.tblAyudaSocial select a;
+
+            asvm.listaAyudas =
+                ayuda.OrderBy(a => a.FechaElaboracion)
+                .ToList();
+
+            return View(asvm);
+        }
+        [HttpGet]
+        public JsonResult CompararAyudasPorAño(int año1, int año2)
+        {
+            var data = _context.tblAyudaSocial
+                .Where(a => a.FechaElaboracion.Year == año1 || a.FechaElaboracion.Year == año2)
+                .GroupBy(a => new { a.FechaElaboracion.Year, Mes = a.FechaElaboracion.Month })
+                .Select(g => new
+                {
+                    Año = g.Key.Year,
+                    Mes = g.Key.Mes,
+                    Cantidad = g.Sum(x => x.CantidadEntregada)
+                })
+                .ToList();
+            return Json(data);
+        }
+        [HttpGet]
+        public JsonResult CompararTopPrestaciones(int año1, int año2)
+        {
+            var top5Prestaciones = _context.tblAyudaSocial
+                .Where(a => a.FechaElaboracion.Year == año1 || a.FechaElaboracion.Year == año2)
+                .GroupBy(a => a.PrestacionesID)
+                .Select(g => new
+                {
+                    PrestacionesID = g.Key,
+                    Total = g.Sum(a => a.CantidadEntregada)
+                })
+                .OrderByDescending(x => x.Total)
+                .Take(5)
+                .Select(x => x.PrestacionesID)
+                .ToList();
+
+            var data = _context.tblAyudaSocial
+                .Where(a => top5Prestaciones.Contains(a.PrestacionesID)
+                         && (a.FechaElaboracion.Year == año1 || a.FechaElaboracion.Year == año2))
+                .GroupBy(a => new { a.PrestacionesID, a.FechaElaboracion.Year })
+                .Select(g => new
+                {
+                    Prestacion = g.Key.PrestacionesID,
+                    Año = g.Key.Year,
+                    Cantidad = g.Sum(x => x.CantidadEntregada)
+                })
+                .ToList();
+
+            // Asociar nombres
+            var nombres = _context.tblPrestaciones
+                .Where(p => top5Prestaciones.Contains(p.PrestacionesID))
+                .ToDictionary(p => p.PrestacionesID, p => p.Nombre);
+
+            var resultado = data.Select(x => new
+            {
+                Prestacion = nombres[x.Prestacion],
+                Año = x.Año,
+                Cantidad = x.Cantidad
+            }).ToList();
+
+            return Json(resultado);
+        }
+
+        
+        //FILTRO POR RANGO ESTARIO.
+        public IActionResult FiltroRangoEtario()
+        {
+            return View();
+        }
+        [HttpGet]
+        public JsonResult AyudasPorRangoEtario()
+        {
+            var datos = _context.tblAyudaSocial
+                .Include(a => a.Clientes)
+                .ToList()
+                .GroupBy(a =>
+                {
+                    var edad = a.Clientes.Edad;
+
+                    if (edad <= 20) return "0-20";
+                    else if (edad <= 40) return "21-40";
+                    else if (edad <= 60) return "41-60";
+                    else if (edad <= 80) return "61-80";
+                    else return "81-100";
+                })
+                .Select(g => new
+                {
+                    Rango = g.Key,
+                    TotalAyudas = g.Sum(a => a.CantidadEntregada)
+                })
+                .OrderBy(r => r.Rango)
+                .ToList();
+
+            return Json(datos);
+        }
+
+
+        //FILTRO POR COMPARATIVA DE NACIONALIDADES.
+        public IActionResult ComNacionalidad()
+        {
+            return View();
+        }
+        [HttpGet]
+        public JsonResult ComparativaNacionalidades()
+        {
+            var datos = _context.tblAyudaSocial
+                .Include(a => a.Clientes)
+                .ThenInclude(c => c.Nacionalidad)
+                .ToList()
+                .GroupBy(a => a.Clientes.Nacionalidad.Nombre)
+                .Select(g => new
+                {
+                    Nacionalidad = g.Key,
+                    TotalAyudas = g.Sum(a => a.CantidadEntregada)
+                })
+                .OrderByDescending(x => x.TotalAyudas)
+                .ToList();
+
+            if (datos.Count > 10)
+            {
+                var top9 = datos.Take(9).ToList();
+                var otras = new
+                {
+                    Nacionalidad = "Otras",
+                    TotalAyudas = datos.Skip(9).Sum(x => x.TotalAyudas)
+                };
+
+                top9.Add(otras);
+                return Json(top9);
+            }
+
+            return Json(datos);
+        }
+
 
 
 
@@ -249,7 +486,8 @@ namespace SistemaSocial.Controllers
 
             return View(asvm);
         }
-            /* ESTADISTICAS POR FILTROS */
+        
+        /* ESTADISTICAS POR FILTROS */
             public JsonResult EstadisticasAyudas(DateTime FechaInicio, DateTime FechaFin, RecuperarDatos R)
             {
                 Datos();
@@ -292,6 +530,7 @@ namespace SistemaSocial.Controllers
                     return Json(listaAyudas);
                 }
             }
+
             public JsonResult EstadisticasPres(DateTime FechaInicio, DateTime FechaFin, RecuperarDatos R)
             {
                 Datos();

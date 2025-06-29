@@ -113,39 +113,50 @@
 
         <nav aria-label="Page navigation example">
             <ul class="pagination justify-content-center pagination-circle mt-2">
-                @{
-                    if (Model.Paginas != 1) {
-                        <li class="page-item">
-                            <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaAnterior"]">Anterior</a>
-                        </li>
-                    }
-                    else {
-                        <li class="page-item disabled">
-                            <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaAnterior"]">Anterior</a>
-                        </li>
-                    }
+                @if (Model.Paginas > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaAnterior"]">Anterior</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">Anterior</a>
+                    </li>
+                }
 
-                    for (int i = 1; i <= Model.CantidadPaginas; i++) {
-                        if (i == Model.Paginas) {
-                            <li class="page-item" aria-current="page">
-                                <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@i">@i</a>
-                            </li>
-                        }
-                    }
-
-                    if (Model.Paginas != Model.CantidadPaginas) {
-                        <li class="page-item">
-                            <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaSiguiente"]">Siguiente</a>
+                @for (int i = Model.InicioPagina; i <= Model.FinPagina; i++)
+                {
+                    if (i == Model.Paginas)
+                    {
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">@i</span>
                         </li>
                     }
-                    else {
-                        <li class="page-item disabled">
-                            <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaSiguiente"]">Siguiente</a>
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@i">@i</a>
                         </li>
                     }
                 }
+
+                @if (Model.Paginas < Model.CantidadPaginas)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="IndexClientes" asp-route-Pagina="@TempData["PaginaSiguiente"]">Siguiente</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">Siguiente</a>
+                    </li>
+                }
             </ul>
         </nav>
+
     </div>
 </body>
 </html>

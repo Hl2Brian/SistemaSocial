@@ -1,0 +1,86 @@
+﻿@model SistemaSocial.ViewModel.AyudaSocialView
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<Usuario> SignInManager
+@inject UserManager<Usuario> UserManager
+
+<!DOCTYPE html>
+<html lang="es-cl">
+<head>
+    <title> Listado Por Tipo de Ayuda. </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0" />
+    <link href="~/font-awesome/" rel="stylesheet" />
+    <link href="~/css/DatosRegistro.css" rel="stylesheet" />
+    <link href="~/css/IndexForm.css" rel="stylesheet" />
+    <link href="~/css/menu.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <div class="course">
+            <div class="course-info">
+                <h2 style="font-size: 23px; text-align:center">
+                    Comparativa de Ayudas Sociales por Nacionalidad
+                </h2>
+            </div>
+        </div>
+
+        <div class="Estadisticas_Nacionalidad">
+            <div class="chart" style="max-width: 600px; margin: auto;">
+                <canvas id="GraficoNacionalidad"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        jQuery.ajax({
+            url: "@Url.Action("ComparativaNacionalidades", "AyudaSocial")",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                const nacionalidades = [];
+                const cantidades = [];
+
+                data.forEach(item => {
+                    nacionalidades.push(item.nacionalidad);
+                    cantidades.push(item.totalAyudas);
+                });
+
+                const ctx = document.getElementById("GraficoNacionalidad").getContext("2d");
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: nacionalidades,
+                        datasets: [{
+                            data: cantidades,
+                            backgroundColor: [
+                                '#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0',
+                                '#9966FF', '#FF9F40', '#E7E9ED', '#79D2DE',
+                                '#E06666', '#93C47D'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Ayudas Entregadas por Nacionalidad (Top 10)'
+                            },
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    </script>
+}

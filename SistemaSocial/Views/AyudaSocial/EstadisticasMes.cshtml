@@ -1,0 +1,247 @@
+﻿@model SistemaSocial.ViewModel.AyudaSocialView
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<Usuario> SignInManager
+@inject UserManager<Usuario> UserManager
+
+<!DOCTYPE html>
+<html lang="es-cl">
+    <head>
+        <title> Listado Por Tipo de Ayuda. </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0" />
+        <link href="~/font-awesome/" rel="stylesheet" />
+        <link href="~/css/DatosRegistro.css" rel="stylesheet" />
+        <link href="~/css/IndexForm.css" rel="stylesheet" />
+        <link href="~/css/menu.css" rel="stylesheet" />
+
+        <style>
+            .filtros-estadisticas {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                margin: 15px 0;
+                flex-wrap: wrap;
+            }
+
+                .filtros-estadisticas label {
+                    font-size: 15px;
+                    margin-right: 4px;
+                    text-align: center;
+                }
+
+                .filtros-estadisticas select {
+                    height: 34px;
+                    width: 120px;
+                    border-radius: 5px;
+                    border: 1px solid #ccc;
+                    font-size: 14px;
+                    padding-left: 8px;
+                }
+
+                .filtros-estadisticas button {
+                    height: 34px;
+                    padding: 0 20px;
+                    font-size: 14px;
+                    border-radius: 6px;
+                    color: #fff;
+                    background-color: #286223;
+                    border: none;
+                    cursor: pointer;
+                }
+
+                    .filtros-estadisticas button:hover {
+                        background-color: #3b822c;
+                    }
+        </style>
+
+    </head>
+    <body>
+        <div class="container">
+            <div class="course">
+                <div class="course-info">
+                    <h2 style="font-size: 23px; text-align:center">
+                        Estadísticas de Ayudas Sociales y Prestaciones. <br />
+                        Por Cada Mes
+                    </h2>
+                </div>
+            </div>
+
+            <div class="filtros-estadisticas">
+                <label for="mes">Mes:</label>
+                <select id="mes" class="filtro-select">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+
+                <label for="anio" style="margin-left: 20px;">Año:</label>
+                <select id="anio" class="filtro-select"></select>
+
+                <button id="btnBuscarMes" style="margin-left: 20px;">Buscar</button>
+            </div>
+
+            <div class="EstadisticasMes">
+                <div class="barra1">
+                    <div class="card-header">
+                        <h4>
+                            Total de Ayudas Entregadas. <br />
+                            Durante el mes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="AyudaMes"></canvas>
+                    </div>
+                </div>
+
+                <div class="pie1">
+                    <div class="card-header">
+                        <h4>
+                            Mayores 5 Prestaciones Entregadas. <br />
+                            Durante el mes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="PrestacionesMes" height="400"></canvas>
+                        <ul id="detallePrestaciones" class="detalle-prestaciones"></ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </body>
+</html>
+
+
+@section scripts{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        
+        let chartAyudaMes = null;
+        let chartPrestacionesMes = null;
+
+        // Rellenar años automáticamente
+        const anioActual = new Date().getFullYear();
+        for (let i = anioActual; i >= anioActual - 10; i--) {
+            $("#anio").append(`<option value="${i}">${i}</option>`);
+        }
+
+        // Click en Buscar
+        $('#btnBuscarMes').click(function () {
+            const mes = parseInt($('#mes').val());
+            const anio = parseInt($('#anio').val());
+
+            // 1. Ayudas del mes
+            $.ajax({
+                url: '@Url.Action("ReporteAyudasPorMes", "AyudaSocial")',
+                type: 'GET',
+                data: { mes, anio },
+                success: function (data) {
+                    const cantidad = data.cantidad;
+
+                    // Si ya existe un gráfico anterior, lo destruimos
+                    if (chartAyudaMes !== null) {
+                        chartAyudaMes.destroy();
+                    }
+
+                    const ctx = document.getElementById('AyudaMes').getContext('2d');
+                    chartAyudaMes = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Ayudas del mes', ''],
+                            datasets: [{
+                                data: [cantidad, 1],
+                                backgroundColor: ['rgba(34, 187, 157, 0.75)', 'rgba(220, 220, 220, 0.15)'],
+                                borderColor: ['rgb(34, 187, 157)', 'rgba(200,200,200,0.7)'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: `Ayudas entregadas – ${new Date(anio, mes - 1).toLocaleString('es-CL', { month: 'long' })} ${anio}`,
+                                    font: { size: 18 }
+                                },
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                },
+                error: err => console.error('Error AyudaMes:', err)
+            });
+
+            // 2. Prestaciones del mes
+            $.ajax({
+                url: '@Url.Action("ReportePrestacionesPorMes", "AyudaSocial")',
+                type: 'GET',
+                data: { mes, anio },
+                success: function (data) {
+                    const labels = data.map(d => d.prestacion);
+                    const cantidades = data.map(d => d.cantidad);
+                    const total = cantidades.reduce((a, b) => a + b, 0);
+
+                    // Si ya existe un gráfico anterior, lo destruimos
+                    if (chartPrestacionesMes !== null) {
+                        chartPrestacionesMes.destroy();
+                    }
+
+                    const ctx = document.getElementById('PrestacionesMes').getContext('2d');
+                    chartPrestacionesMes = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Cantidad',
+                                data: cantidades,
+                                backgroundColor: 'rgba(113, 34, 187, 0.45)',
+                                borderColor: 'rgb(113, 34, 187)',
+                                borderWidth: 1,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: `Top 5 prestaciones – ${new Date(anio, mes - 1).toLocaleString('es-CL', { month: 'long' })} ${anio}`,
+                                    font: { size: 18 }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => {
+                                            const val = ctx.raw;
+                                            const pct = ((val / total) * 100).toFixed(1);
+                                            return `${ctx.label}: ${val} ayudas (${pct}%)`;
+                                        }
+                                    }
+                                },
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 }
+                                }
+                            }
+                        }
+                    });
+                },
+                error: err => console.error('Error PrestacionesMes:', err)
+            });
+        });
+    </script>
+
+
+}

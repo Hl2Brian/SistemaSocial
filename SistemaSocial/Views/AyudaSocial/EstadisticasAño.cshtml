@@ -1,0 +1,260 @@
+﻿@model SistemaSocial.ViewModel.AyudaSocialView
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<Usuario> SignInManager
+@inject UserManager<Usuario> UserManager
+
+<!DOCTYPE html>
+<html lang="es-cl">
+<head>
+    <title> Listado Por Tipo de Ayuda. </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0" />
+    <link href="~/font-awesome/" rel="stylesheet" />
+    <link href="~/css/DatosRegistro.css" rel="stylesheet" />
+    <link href="~/css/IndexForm.css" rel="stylesheet" />
+    <link href="~/css/menu.css" rel="stylesheet" />
+
+    <style>
+        .filtros-estadisticas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            font-size: 16px;
+        }
+
+            .filtros-estadisticas label {
+                font-weight: bold;
+                color: #333;
+            }
+
+            .filtros-estadisticas .año-select {
+                padding: 6px 12px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                font-size: 15px;
+                min-width: 100px;
+                background-color: #fff;
+                color: #333;
+            }
+
+            .filtros-estadisticas #btnComparar {
+                padding: 6px 16px;
+                background-color: #286223;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 15px;
+                cursor: pointer;
+                transition: background-color 0.2s ease-in-out;
+            }
+
+                .filtros-estadisticas #btnComparar:hover {
+                    background-color: #3b822c;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="course">
+            <div class="course-info">
+                <h2 style="font-size: 23px; text-align:center">
+                    Estadísticas de Ayudas Sociales y Prestaciones. <br />
+                    Anuales.
+                </h2>
+            </div>
+        </div>
+        <div class="filtros-estadisticas" style="text-align:center;">
+            <label for="año1">Año 1:</label>
+            <select id="año1" class="año-select"></select>
+
+            <label for="año2" style="margin-left: 20px;">Año 2:</label>
+            <select id="año2" class="año-select"></select>
+
+            <button id="btnComparar" style="margin-left: 20px;">Comparar</button>
+        </div>
+        <div class="Estadisticas_Anual">.
+            <div class="bar">
+                <div class="card-header">
+                    <h4>
+                        Comparación del Total de Ayudas Entregadas.
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="AyudaAnual"></canvas>
+                </div>
+            </div>
+
+            <div class="polarArea">
+                <div class="card-header">
+                    <h4>
+                        Mayores 5 Prestaciones Entregadas.
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="PrestacionesAnual"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const cargarAños = () => {
+            const añoActual = new Date().getFullYear();
+            const select1 = document.getElementById('año1');
+            const select2 = document.getElementById('año2');
+        
+            for (let i = añoActual; i >= 2015; i--) {
+                let opt1 = document.createElement('option');
+                opt1.value = i;
+                opt1.text = i;
+                select1.appendChild(opt1);
+            
+                let opt2 = document.createElement('option');
+                opt2.value = i;
+                opt2.text = i;
+                select2.appendChild(opt2);
+            }
+        
+            // Año por defecto
+            select1.value = añoActual - 1;
+            select2.value = añoActual;
+        };
+    </script>
+    <script>
+        let graficoAyudas = null;
+        let graficoPrestaciones = null;
+
+        const cargarGraficoAyudas = (a1, a2) => {
+            jQuery.ajax({
+                url: "@Url.Action("CompararAyudasPorAño", "AyudaSocial")",
+                type: "GET",
+                data: { año1: a1, año2: a2 },
+                success: function (data) {
+                    const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                    let año1Data = new Array(12).fill(0);
+                    let año2Data = new Array(12).fill(0);
+
+                    data.forEach(x => {
+                        const index = x.mes - 1;
+                        if (x.año === a1)
+                            año1Data[index] = x.cantidad;
+                        else if (x.año === a2)
+                            año2Data[index] = x.cantidad;
+                    });
+
+                    if (graficoAyudas) graficoAyudas.destroy();
+                    var ctx = document.getElementById('AyudaAnual');
+                    graficoAyudas = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: meses,
+                            datasets: [
+                                {
+                                    label: a1,
+                                    data: año1Data,
+                                    backgroundColor: 'rgba(34, 113, 187, 0.6)'
+                                },
+                                {
+                                    label: a2,
+                                    data: año2Data,
+                                    backgroundColor: 'rgba(187, 162, 34, 0.6)'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        };
+
+        const cargarGraficoPrestaciones = (a1, a2) => {
+            jQuery.ajax({
+                url: "@Url.Action("CompararTopPrestaciones", "AyudaSocial")",
+                type: "GET",
+                data: { año1: a1, año2: a2 },
+                success: function (data) {
+                    let prestaciones = [...new Set(data.map(x => x.prestacion))];
+                    let año1Data = prestaciones.map(p => {
+                        let entry = data.find(x => x.prestacion === p && x.año === a1);
+                        return entry ? entry.cantidad : 0;
+                    });
+                    let año2Data = prestaciones.map(p => {
+                        let entry = data.find(x => x.prestacion === p && x.año === a2);
+                        return entry ? entry.cantidad : 0;
+                    });
+
+                    if (graficoPrestaciones) graficoPrestaciones.destroy();
+                    var ctx2 = document.getElementById('PrestacionesAnual');
+                    graficoPrestaciones = new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: prestaciones,
+                            datasets: [
+                                {
+                                    label: `Año ${a1}`,
+                                    data: año1Data,
+                                    backgroundColor: 'rgba(34, 113, 187, 0.6)'
+                                },
+                                {
+                                    label: `Año ${a2}`,
+                                    data: año2Data,
+                                    backgroundColor: 'rgba(187, 34, 34, 0.6)'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        };
+
+    </script>
+    <script>
+        document.getElementById('btnComparar').addEventListener('click', () => {
+            const a1 = parseInt(document.getElementById('año1').value);
+            const a2 = parseInt(document.getElementById('año2').value);
+            if (a1 === a2) {
+                alert("Seleccione años distintos para comparar.");
+                return;
+            }
+
+            cargarGraficoAyudas(a1, a2);
+            cargarGraficoPrestaciones(a1, a2);
+        });
+    </script>
+    <script>
+        window.onload = () => {
+            cargarAños();
+            const añoActual = new Date().getFullYear();
+            cargarGraficoAyudas(añoActual - 1, añoActual);
+            cargarGraficoPrestaciones(añoActual - 1, añoActual);
+        };
+    </script>
+}

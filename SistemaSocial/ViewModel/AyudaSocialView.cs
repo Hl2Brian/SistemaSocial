@@ -32,5 +32,8 @@ namespace SistemaSocial.ViewModel
         public int CantidadPaginas { get; set; }
         public int Cantidad { get; set; }
 
+        //Filtrados
+        public int TotalAyudas { get; set; }
+
     }
 }

@@ -1,0 +1,84 @@
+﻿@model SistemaSocial.ViewModel.AyudaSocialView
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<Usuario> SignInManager
+@inject UserManager<Usuario> UserManager
+
+<!DOCTYPE html>
+<html lang="es-cl">
+<head>
+    <title> Listado Por Tipo de Ayuda. </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0" />
+    <link href="~/font-awesome/" rel="stylesheet" />
+    <link href="~/css/DatosRegistro.css" rel="stylesheet" />
+    <link href="~/css/IndexForm.css" rel="stylesheet" />
+    <link href="~/css/menu.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <div class="course">
+            <div class="course-info">
+                <h2 style="font-size: 23px; text-align:center">
+                    Comparativa de Ayudas Sociales por Rango Etario
+                </h2>
+            </div>
+        </div>
+        <div class="Estadisticas_Anual">
+            <div class="bar">
+                <div class="card-header">
+                    <h4>Cantidad de Ayudas por Grupos de Edad</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="GraficoEtario"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        jQuery.ajax({
+            url: "@Url.Action("AyudasPorRangoEtario", "AyudaSocial")",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                const rangos = [];
+                const cantidades = [];
+
+                data.forEach(item => {
+                    rangos.push(item.rango);
+                    cantidades.push(item.totalAyudas);
+                });
+
+                const ctx = document.getElementById("GraficoEtario").getContext("2d");
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: rangos,
+                        datasets: [{
+                            label: "Total Ayudas Entregadas",
+                            data: cantidades,
+                            backgroundColor: "rgba(34, 113, 187, 0.6)",
+                            borderColor: "rgba(34, 113, 187, 1)",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    </script>
+}

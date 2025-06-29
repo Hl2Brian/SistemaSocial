@@ -91,46 +91,43 @@ namespace SistemaSocial.Controllers
             return View(cvm);
         }
         [HttpGet]
-        public IActionResult IndexClientes(int Pagina, string Busqueda)
+        public IActionResult IndexClientes(int Pagina = 1, string Busqueda = "")
         {
             Datos();
             var cvm = new ClientesView();
 
-            //PAGINADO
-            if (Pagina == 0) {
-                cvm.Paginas = 1;
-            }
-            else {
-                cvm.Paginas = Pagina;
-            }
             int Muestra = 8;
-            int Cantidad = _context.tblClientes.ToList().Count / Muestra;
-            if (Cantidad % Muestra == 0) {
-                cvm.CantidadPaginas = Cantidad;
-            }
-            else {
-                cvm.CantidadPaginas = Cantidad + 1;
-            }
-            TempData["PaginaSiguiente"] = Pagina + 1;
-            TempData["PaginaAnterior"] = Pagina - 1;
+            int totalClientes = _context.tblClientes.Count();
+            int totalPaginas = (int)Math.Ceiling((double)totalClientes / Muestra);
 
+            // Validación de la página actual
+            cvm.Paginas = Pagina < 1 ? 1 : Pagina;
+            cvm.CantidadPaginas = totalPaginas;
 
-            //BUSQUEDA
+            // Cálculo del bloque actual
+            int bloque = (int)Math.Ceiling((double)cvm.Paginas / 5);
+            cvm.InicioPagina = (bloque - 1) * 5 + 1;
+            cvm.FinPagina = Math.Min(cvm.InicioPagina + 4, totalPaginas);
+
+            TempData["PaginaAnterior"] = cvm.Paginas > 1 ? cvm.Paginas - 1 : 1;
+            TempData["PaginaSiguiente"] = cvm.Paginas < totalPaginas ? cvm.Paginas + 1 : totalPaginas;
+
+            // Búsqueda
             var cliente = from c in _context.tblClientes select c;
-            if (!String.IsNullOrEmpty(Busqueda)) {
+            if (!string.IsNullOrEmpty(Busqueda))
+            {
                 cliente = cliente.Where(c =>
-                  c.Rut.Contains(Busqueda)
-               || c.Nombres.Contains(Busqueda)
-               || c.ApellidoPaterno.Contains(Busqueda));
+                    c.Rut.Contains(Busqueda)
+                    || c.Nombres.Contains(Busqueda)
+                    || c.ApellidoPaterno.Contains(Busqueda));
             }
 
             var clientes = cliente
-                .Where(c => c.TipoDeCliente.Equals("Requirente") || c.TipoDeCliente.Equals("Ambos"))
+                .Where(c => c.TipoDeCliente == "Requirente" || c.TipoDeCliente == "Ambos")
                 .OrderBy(c => c.ClientesID)
                 .ToList();
 
-            var GrupoFamiliar = cliente
-                .Where(c => c.TipoDeCliente.Equals("Requirente") || c.TipoDeCliente.Equals("Ambos"))
+            var GrupoFamiliar = clientes
                 .Select(c => c.GrupoFamiliar)
                 .Distinct()
                 .ToList();
@@ -144,6 +141,8 @@ namespace SistemaSocial.Controllers
 
             return View(cvm);
         }
+
+
         [HttpGet]
         public IActionResult IndexGrupoFamiliar(int GrupoFamiliar, string Busqueda)
         {

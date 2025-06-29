@@ -118,6 +118,73 @@
                                         Inicio
                                     </a>
                                 </li>
+
+                                <li class="nav-item dropdown">
+                                    <a class="dropdown-toggle"
+                                       id="navbarDropdown"
+                                       data-toggle="dropdown"
+                                       aria-haspopup="true"
+                                       aria-expanded="false">
+                                        Filtos
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                        <table>
+                                            <tbody>
+                                                <tr>
+                                                    <th>
+                                                        <a class="dropdown-item"
+                                                           asp-controller="AyudaSocial"
+                                                           asp-action="ListadoFechas">
+                                                            Filtro de Ayudas por Fechas.
+                                                        </a>
+                                                    </th>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>
+                                                        <a class="dropdown-item"
+                                                           asp-controller="AyudaSocial"
+                                                           asp-action="EstadisticasMes">
+                                                            Estadísticas de Ayudas por Mes.
+                                                        </a>
+                                                    </th>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>
+                                                        <a class="dropdown-item"
+                                                           asp-controller="AyudaSocial"
+                                                           asp-action="EstadisticasAño">
+                                                            Estadísticas de Ayudas por Año.
+                                                        </a>
+                                                    </th>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>
+                                                        <a class="dropdown-item"
+                                                           asp-controller="AyudaSocial"
+                                                           asp-action="FiltroRangoEtario">
+                                                            Rango Etario de Ayudas Entregadas.
+                                                        </a>
+                                                    </th>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>
+                                                        <a class="dropdown-item"
+                                                           asp-controller="AyudaSocial"
+                                                           asp-action="ComNacionalidad">
+                                                            Comparativa de Nacionalidades.
+                                                        </a>
+                                                    </th>
+                                                </tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </li>
+
                                 <li class="nav-item dropdown">
                                     <a class="dropdown-toggle"
                                        id="navbarDropdown"
@@ -128,31 +195,13 @@
                                     </a>
                                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                         <table>
-                                            <tr>
-                                                <th>
-                                                    <a class="dropdown-item"
-                                                       asp-action="TipoDeAyuda"
-                                                       asp-controller="AyudaSocial">
-                                                        Listado de Ayudas.
-                                                    </a>
-                                                </th>
-                                            </tr>
-                                            <tr>
-                                                <th>
-                                                    <a class="dropdown-item"
-                                                       asp-controller="AyudaSocial"
-                                                       asp-action="ListadoFechas">
-                                                        Filtro de Ayudas por Fechas.
-                                                    </a>
-                                                </th>
-                                            </tr>
                                            @if (Permiso_Ayuda != null) {
                                                 <tr>
                                                     <th>
                                                         <a class="dropdown-item"
-                                                           asp-controller="AyudaSocial"
-                                                           asp-action="Estadisticas">
-                                                            Estadísticas de Ayudas.
+                                                           asp-action="TipoDeAyuda"
+                                                           asp-controller="AyudaSocial">
+                                                            Listado de Ayudas.
                                                         </a>
                                                     </th>
                                                 </tr>
