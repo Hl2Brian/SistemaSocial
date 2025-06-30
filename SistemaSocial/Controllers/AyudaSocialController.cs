@@ -373,8 +373,6 @@ namespace SistemaSocial.Controllers
         }
 
 
-
-
         public IActionResult Estadisticas(int Pagina)
         {
             Datos();

@@ -1,17 +1,17 @@
 ﻿@model SistemaSocial.ViewModel.InformeSocialView
 @using Microsoft.AspNetCore.Identity
-
 @inject SignInManager<Usuario> SignInManager
 @inject UserManager<Usuario> UserManager
 
 <!DOCTYPE html>
 <html lang="es-cl">
 <head>
-    <title> Informes Sociales. </title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximun-scale=1.0, minimun-scale=1.0" />
+    <title>Informes Sociales</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="~/css/DatosRegistro.css" rel="stylesheet" />
     <link href="~/css/IndexForm.css" rel="stylesheet" />
     <link href="~/css/menu.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-iX8X6z1Kc1anVcBSXp6Ck9kqkXgXFwh76/vn85/3p4OEZLiZ2cjrKDXzP/0wlfM+xi9mWRFkH0qwvAYUyhoY2A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <div class="container">
@@ -21,18 +21,31 @@
                 <form asp-controller="InformeSocial" asp-action="IndexInformeSocial" method="get">
                     <h7>Buscar Informe por Run o Pasaporte o N° de Informe: </h7>
                     <div class="input-info">
-                        <input type="text" asp-for="Busqueda" class="details-info1" />
+                        <input type="text" asp-for="Busqueda" class="details-info1" value="@Model.Busqueda" />
                         <input type="submit" value="Buscar" class="details-info2" />
                     </div>
                 </form>
             </div>
         </div>
 
-        <div style=" overflow-x: auto;">
+        <div class="form-group">
+            <label for="profesionalSelect">Filtrar por Profesional:</label>
+            <select id="profesionalSelect" class="form-control">
+                <option value="">-- Seleccione --</option>
+                @foreach (var user in Model.ListaUsuarios)
+                {
+                    <option value="@user.Id">@user.Nombre @user.Apellido</option>
+                }
+            </select>
+        </div>
+
+        <div style="overflow-x:auto;">
             @{
-                if (SignInManager.IsSignedIn(User)) {
-                    var Claims = User.Claims.Where(C => C.Type == "Admin" || C.Type == "Editor").FirstOrDefault(); ;
-                    if (Claims != null) {
+                if (SignInManager.IsSignedIn(User))
+                {
+                    var Claims = User.Claims.FirstOrDefault(C => C.Type == "Admin" || C.Type == "Editor");
+                    if (Claims != null)
+                    {
                         <div>
                             <partial name="_DatosIndexPartial" />
                         </div>
@@ -43,39 +56,41 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th scope="col"> N° Informe </th>
-                            <th scope="col"> Nombre Usuario </th>
-                            <th scope="col"> Fecha </th>
-                            @if (SignInManager.IsSignedIn(User)) {
-                                var Claims = User.Claims.Where(C => C.Type == "Admin" || C.Type == "Editor").FirstOrDefault(); ;
-                                if (Claims != null) {
+                            <th scope="col">N° Informe</th>
+                            <th scope="col">Nombre Usuario</th>
+                            <th scope="col">Fecha</th>
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                var Claims = User.Claims.FirstOrDefault(C => C.Type == "Admin" || C.Type == "Editor");
+                                if (Claims != null)
+                                {
                                     <th scope="col">Profesional</th>
-                                    <th scope="col"> </th>
+                                    <th scope="col"></th>
                                 }
                             }
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach (var C in Model.ListaInformeSocial) {
+                    <tbody id="tablaInformesBody">
+                        @foreach (var C in Model.ListaInformeSocial)
+                        {
                             <tr>
                                 <td data-label="N°">
                                     <i class="fa-thin fa-hashtag"></i>
-                                    @Html.DisplayFor(modelItem => C.NumInforme)
+                                    @C.NumInforme
                                 </td>
                                 <td data-label="Nombre">
-                                    @Html.DisplayFor(modelItem => C.Clientes.Nombres)
-                                    @Html.DisplayFor(modelItem => C.Clientes.ApellidoPaterno)
-                                    @Html.DisplayFor(modelItem => C.Clientes.ApellidoMaterno)
+                                    @C.Clientes.Nombres @C.Clientes.ApellidoPaterno @C.Clientes.ApellidoMaterno
                                 </td>
-                                <td data-label="Fecha"> @C.FechaElaboracion.ToString("dd/MM/yyyy") </td>
-                                @if (SignInManager.IsSignedIn(User)) {
-                                    var Claims = User.Claims.Where(C => C.Type == "Admin" || C.Type == "Editor").FirstOrDefault(); ;
-                                    var Permiso = User.Claims.Where(C => C.Type == "Admin" && C.Value == "10").FirstOrDefault();
-                                    if (Claims != null) {
-                                        <td>
-                                            @Html.DisplayFor(modelItem => C.Usuario.Nombre)
-                                            @Html.DisplayFor(modelItem => C.Usuario.Apellido)
-                                        </td>
+                                <td data-label="Fecha">@C.FechaElaboracion.ToString("dd/MM/yyyy")</td>
+
+                                @* columnas extra solo para Admin/Editor *@
+                                @if (SignInManager.IsSignedIn(User))
+                                {
+                                    var Claims = User.Claims.FirstOrDefault(C => C.Type == "Admin" || C.Type == "Editor");
+                                    var Permiso = User.Claims.FirstOrDefault(C => C.Type == "Admin" && C.Value == "10");
+                                    if (Claims != null)
+                                    {
+                                        <td>@C.Usuario.Nombre @C.Usuario.Apellido</td>
                                         <td data-label="">
                                             <div class="Drop dropdown">
                                                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
@@ -108,7 +123,7 @@
                                                                        asp-route-InformeID="@C.InformeSocialID"
                                                                        asp-route-NumInforme="@C.NumInforme"
                                                                        asp-route-User="@UserManager.GetUserName(User)">
-                                                                        <i class="fas fa-file-pdf"></i> 
+                                                                        <i class="fas fa-file-pdf"></i>
                                                                         Informe Social. (Reducido)
                                                                     </a>
                                                                 </div>
@@ -130,7 +145,8 @@
                                                             </li>
                                                             <li class="dropdown dropdown-submenu">
                                                                 <div class="dropdown" aria-labelledby="dropdownMenuButton2">
-                                                                    @if (Permiso != null) {
+                                                                    @if (Permiso != null)
+                                                                    {
                                                                         <a class="dropdown-item"
                                                                            asp-controller="InformeSocial"
                                                                            asp-action="EliminarInformeSocial"
@@ -145,13 +161,13 @@
                                                 </div>
                                             </div>
                                             <script>
-                                                $(document).ready(function () {
-                                                $('.dropdown-submenu button.test').on("click", function (e) {
-                                                    $(this).next('div.dropdown-menu').toggle();
-                                                    e.stopPropagation();
-                                                    e.preventDefault();
+                                                    $(document).ready(function () {
+                                                    $('.dropdown-submenu button.test').on("click", function (e) {
+                                                        $(this).next('div.dropdown-menu').toggle();
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                    });
                                                 });
-                                            });
                                             </script>
                                         </td>
                                     }
@@ -161,17 +177,126 @@
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <nav aria-label="Page navigation example">
-            <ul class="pagination justify-content-center pagination-circle mt-2">
-                @for (int i = 1; i <= Model.CantidadPaginas; i++) {
-                    <li class="page-item" aria-current="page">
-                        <a class="page-link" asp-action="IndexInformeSocial" asp-route-Pagina="@i">@i</a>
-                    </li>
-                }
-            </ul>
-        </nav>
+            <div>
+                <ul class="pagination justify-content-center pagination-circle mt-2">
+                    @if (Model.Paginas > 1) {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="IndexInformeSocial" asp-route-Pagina="@TempData["PaginaAnterior"]">Anterior</a>
+                        </li>
+                    }
+                    else {
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#">Anterior</a>
+                        </li>
+                    }
+
+                    @for (int i = Model.InicioPagina; i <= Model.FinPagina; i++) {
+                        if (i == Model.Paginas) {
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">@i</span>
+                            </li>
+                        }
+                        else {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="IndexInformeSocial" asp-route-Pagina="@i">@i</a>
+                            </li>
+                        }
+                    }
+
+                    @if (Model.Paginas < Model.CantidadPaginas) {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="IndexInformeSocial" asp-route-Pagina="@TempData["PaginaSiguiente"]">Siguiente</a>
+                        </li>
+                    }
+                    else {
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#">Siguiente</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div id="contenedorResultados" style="display:none;">
+                <h4 class="mt-4">Gráfico de Ayudas entregadas por Mes</h4>
+                <canvas id="graficoMeses"></canvas>
+
+                <h4 class="mt-4">Resumen del Profesional</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nombre Profesional</th>
+                            <th>Total Ayudas Entregadas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaResumenProfesional"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </body>
 </html>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let grafico;
+
+        document.getElementById("profesionalSelect").addEventListener("change", function () {
+            const profesionalId = this.value;
+
+            if (!profesionalId) {
+                document.getElementById("contenedorResultados").style.display = "none";
+                if (grafico) grafico.destroy();
+                return;
+            }
+
+            fetch(`/InformeSocial/GetInformesPorProfesional?profesionalId=${profesionalId}`)
+                .then(res => res.json())
+                .then(data => {
+
+                    document.getElementById("contenedorResultados").style.display = "block";
+                    const resumen = document.getElementById("tablaResumenProfesional");
+                    resumen.innerHTML = ""; // limpiar
+
+                    const fila = document.createElement("tr");
+                    fila.innerHTML = `<td>${data.nombreProfesional}</td><td>${data.totalAyudas}</td>`;
+                    resumen.appendChild(fila);
+
+                    const mesesEtiqueta = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                    const etiquetas = [];
+                    const valores = [];
+
+                    data.porMes.forEach(p => {
+                        etiquetas.push(mesesEtiqueta[p.mes - 1]);
+                        valores.push(p.cantidad);
+                    });
+
+                    if (grafico) grafico.destroy();
+
+                    const ctx = document.getElementById('graficoMeses').getContext('2d');
+                    grafico = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: etiquetas,
+                            datasets: [{
+                                label: 'Ayudas Entregadas',
+                                data: valores,
+                                backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(err => console.error(err));
+        });
+    </script>
+}

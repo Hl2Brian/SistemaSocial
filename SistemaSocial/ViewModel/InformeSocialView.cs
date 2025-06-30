@@ -79,5 +79,7 @@ namespace SistemaSocial.ViewModel
         //PAGINADO
         public int Paginas { get; set; }
         public int CantidadPaginas { get; set; }
+        public int InicioPagina { get; set; }
+        public int FinPagina { get; set; }
     }
 }

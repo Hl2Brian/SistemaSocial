@@ -96,39 +96,41 @@ namespace SistemaSocial.Controllers
         {
             Datos();
             var ivm = new InformeSocialView();
+            int Muestra = 4;
+            int totalClientes = _context.tblClientes.Count();
+            int totalPaginas = (int)Math.Ceiling((double)totalClientes / Muestra);
 
-            if (Pagina == 0) {
-                ivm.Paginas = 1;
-            }
-            else {
-                ivm.Paginas = Pagina;
-            }
+            // Validación de la página actual
+            ivm.Paginas = Pagina < 1 ? 1 : Pagina;
+            ivm.CantidadPaginas = totalPaginas;
 
-            int Muestra = 15;
-            int Cantidad = _context.tblInformeSocial.ToList().Count / Muestra;
-            if (Cantidad % Muestra == 0) {
-                ivm.CantidadPaginas = Cantidad;
-            }
-            else {
-                ivm.CantidadPaginas = Cantidad + 1;
-            }
+            // Cálculo del bloque actual
+            int bloque = (int)Math.Ceiling((double)ivm.Paginas / 5);
+            ivm.InicioPagina = (bloque - 1) * 5 + 1;
+            ivm.FinPagina = Math.Min(ivm.InicioPagina + 4, totalPaginas);
 
-            TempData["PaginaSiguiente"] = Pagina + 1;
-            TempData["PaginaAnterior"] = Pagina - 1;
+            TempData["PaginaAnterior"] = ivm.Paginas > 1 ? ivm.Paginas - 1 : 1;
+            TempData["PaginaSiguiente"] = ivm.Paginas < totalPaginas ? ivm.Paginas + 1 : totalPaginas;
 
 
             //BUSQUEDA
             var informe = from c in _context.tblInformeSocial select c;
 
-            if (!String.IsNullOrEmpty(Busqueda)) {
+            if (!String.IsNullOrEmpty(Busqueda))
+            {
                 informe = informe.Where(c =>
-                c.NumInforme.ToString().Contains(Busqueda)
-             || c.Clientes.Rut.Contains(Busqueda));
+                    c.NumInforme.ToString().Contains(Busqueda)
+                    || c.Clientes.Rut.Contains(Busqueda));
             }
 
-            ivm.ListaInformeSocial = informe
-                .Where(i => i.NumInforme == 0 || informe
-                .Any(j => j.NumInforme == i.NumInforme && j.InformeSocialID > i.InformeSocialID) == false)
+            // Asegúrate de cargar usuarios antes del paginado
+            ivm.ListaUsuarios = _context.Users.ToList();
+
+            // Solo los informes más recientes (1 por número)
+            var informesFiltrados = informe
+                .Where(i => i.NumInforme == 0 || !informe.Any(j => j.NumInforme == i.NumInforme && j.InformeSocialID > i.InformeSocialID));
+
+            ivm.ListaInformeSocial = informesFiltrados
                 .OrderByDescending(i => i.InformeSocialID)
                 .Skip((ivm.Paginas - 1) * Muestra)
                 .Take(Muestra)
@@ -136,6 +138,40 @@ namespace SistemaSocial.Controllers
 
             return View(ivm);
         }
+
+        [HttpGet]
+        public JsonResult GetInformesPorProfesional(string profesionalId)
+        {
+            var informes = _context.tblInformeSocial
+                .Where(i => i.UsuarioID == profesionalId)
+                .ToList();
+
+            var nombreProfesional = _context.Users
+                .Where(u => u.Id == profesionalId)
+                .Select(u => u.Nombre + " " + u.Apellido)
+                .FirstOrDefault();
+
+            var totalAyudas = informes.Count;
+
+            var porMes = informes
+                .GroupBy(i => i.FechaElaboracion.Month)
+                .Select(g => new {
+                    Mes = g.Key,
+                    Cantidad = g.Count()
+                })
+                .OrderBy(g => g.Mes)
+                .ToList();
+
+            return Json(new
+            {
+                nombreProfesional,
+                totalAyudas,
+                porMes
+            });
+        }
+
+
+
         public IActionResult Imprimir_Informe
             (int ClientesID, int InformeID, int NumInforme, int Grupo, int NumMedio, int NumCuenta, int NumAyuda)
         {
