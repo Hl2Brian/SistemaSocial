@@ -254,7 +254,7 @@
             fetch(`/InformeSocial/GetInformesPorProfesional?profesionalId=${profesionalId}`)
                 .then(res => res.json())
                 .then(data => {
-
+                     
                     document.getElementById("contenedorResultados").style.display = "block";
                     const resumen = document.getElementById("tablaResumenProfesional");
                     resumen.innerHTML = ""; // limpiar
